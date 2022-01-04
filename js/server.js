@@ -16,15 +16,10 @@ let server = net.createServer(client => {
         if (data == "/newname") {
             updateNameList = true;
         } else if (updateNameList == true) {
-            let newData = data[1]
-            console.log(newData)
             for (let i = 0; i < (nameList.length + 1); i++) {
-                if (newData[0] == nameList[i]) {
+                if (data == nameList[i]) {
                     console.log('Taken name attempt');
                     nameTaken = true;
-                }
-                if (newData[1] == nameList[i]) {
-                    nameList[i] = null;
                 }
             }
             if (nameTaken == true) {
@@ -32,6 +27,7 @@ let server = net.createServer(client => {
                 nameTaken = false;
             } else {
                 nameList.push(data.toString().trim());
+                client.write('your name has been updated!')
                 updateNameList = false;
             }
         } else {

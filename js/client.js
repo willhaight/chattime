@@ -27,12 +27,7 @@ let client = net.createConnection({ port: 3001 }, () => {
             nameChange = true;
         } else if (nameChange == true) {
             name = data.toString().trim();
-            console.log(`Your name is now ${name}`);
-            let newArr = [];
-            newArr.push(data.toString().trim());
-            newArr.push(currentName);
-            console.log(`I am newArr ${newArr}`)
-            client.write(newArr.toString());
+            client.write(name);
             nameChange = false;
         } else if (name == "unamed") {
             console.log("You must set a username before chatting. /username to begin.");
