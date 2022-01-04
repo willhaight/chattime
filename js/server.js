@@ -27,7 +27,7 @@ let server = net.createServer(client => {
                 nameTaken = false;
             } else {
                 nameList.push(data.toString().trim());
-                client.write('your name has been updated!')
+                client.write('your name has been updated!');
                 updateNameList = false;
             }
         } else {
