@@ -9,9 +9,9 @@ let nameTaken = false;
 let myEmitter = new EventEmitter();
 let server = net.createServer(client => {
     console.log('server is started');
+    client.write(`${count}`);
     contactList.push(`${client}`)
-    client.write(contactList[count]);
-    count++;
+    count++
     client.on('data', (data) => {
         if (data == "/newname") {
             updateNameList = true;
@@ -31,9 +31,13 @@ let server = net.createServer(client => {
                 updateNameList = false;
             }
         } else {
-            console.log(`${data.toString().trim()}`);
-            messageHandler = `${data.toString().trim()}`;
-            myEmitter.emit('message');
+            if (data.toString().trim() == "/idRecieved") {
+                client.write('hi')
+            } else {
+                console.log(`${data.toString().trim()}`);
+                messageHandler = `${data.toString().trim()}`;
+                myEmitter.emit('message');
+            }
         }
     });
 

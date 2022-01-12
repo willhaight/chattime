@@ -1,16 +1,24 @@
+const { Socket } = require('dgram');
 const net = require('net');
 let name = "unamed";
 let currentName = "unamed";
 let nameChange = false;
-let firstMessage = true;
+let firstMessage = 0;
+let connectionId = null;
 
 let client = net.createConnection({ port: 3001 }, () => {
     console.log('Client Connected');
     client.on('data', (data) => {
-        if (firstMessage == true) {
+        if (firstMessage == 0) {
+            if (typeof Number(data.toString().trim()) == 'number' && Number(data.toString().trim()) != NaN) {
+                connectionId = data.toString().trim();
+                client.write('/idRecieved')
+                firstMessage++
+            }
+        } else if (firstMessage == 1) {
             console.log(`type /username`);
-            firstMessage = false;
-        } else if (firstMessage == false) {
+            firstMessage++;
+        } else if (firstMessage == 2) {
             if (data.toString().trim() == "/taken") {
                 console.log('That name is currently unavailable')
                 name = "unamed";
@@ -22,8 +30,8 @@ let client = net.createConnection({ port: 3001 }, () => {
     process.stdin.on('data', (data) => {
         if (data.toString().trim() == "/username") {
             currentName = name;
-            client.write("/newname");
             console.log('type new name.');
+            client.write('/newname')
             nameChange = true;
         } else if (nameChange == true) {
             name = data.toString().trim();
@@ -31,6 +39,10 @@ let client = net.createConnection({ port: 3001 }, () => {
             nameChange = false;
         } else if (name == "unamed") {
             console.log("You must set a username before chatting. /username to begin.");
+        } else if (data.toString().trim() == "/kick") {
+            Socket.disconnect();
+        } else if (data.toString().trim() == "/id") {
+            console.log(connectionId);
         }
         else {
             client.write(`${name + ': ' + data.toString().trim()}`)
