@@ -3,45 +3,82 @@ const { EventEmitter } = require('stream');
 let contactList = [];
 let nameList = [];
 let updateNameList = false;
+let idBind = false;
+let storedName = null;
 let count = 0;
+let kickHandle = false;
 let messageHandler;
 let nameTaken = false;
 let myEmitter = new EventEmitter();
 let server = net.createServer(client => {
+    nameList.push('unamed')
     console.log('server is started');
     client.write(`${count}`);
     contactList.push(`${client}`)
     count++
     client.on('data', (data) => {
-        if (data == "/newname") {
-            updateNameList = true;
-        } else if (updateNameList == true) {
-            for (let i = 0; i < (nameList.length + 1); i++) {
-                if (data == nameList[i]) {
-                    console.log('Taken name attempt');
-                    nameTaken = true;
+
+
+        if (idBind == true) {
+            console.log('binding')
+            let id = Number(data.toString().trim())
+            nameList.splice(id, 1, storedName);
+            idBind = false;
+            client.write('/nameBound')
+        } else
+            if (data == "/newname") {
+                updateNameList = true;
+            } else if (data.toString().trim() == "/kick") {
+                kickHandle = true;
+                messageHandler = '/kickWho';
+                myEmitter.emit('kickReady');
+                console.log('readying kick')
+            } else if (kickHandle == true) {
+                messageHandler = `${data.toString().trim()}`;
+                console.log('emission');
+                myEmitter.emit('kick');
+                kickHandle = false;
+            } else if (data.toString().trim() == "/giveList") {
+                client.write(`${nameList}`)
+            }
+
+
+
+
+
+
+
+
+
+            else if (updateNameList == true) {
+                for (let i = 0; i < (nameList.length + 1); i++) {
+                    if (data == nameList[i]) {
+                        console.log('Taken name attempt');
+                        nameTaken = true;
+                    }
+                }
+                if (nameTaken == true) {
+                    client.write('/taken');
+                    nameTaken = false;
+                } else {
+                    client.write("/idBind");
+                    idBind = true;
+                    storedName = data.toString().trim();
+                    updateNameList = false;
+                }
+            } else {
+                if (data.toString().trim() == "/idRecieved") {
+                    client.write('hi')
+                } else {
+                    console.log(`${data.toString().trim()}`);
+                    messageHandler = `${data.toString().trim()}`;
+                    myEmitter.emit('message');
                 }
             }
-            if (nameTaken == true) {
-                client.write('/taken');
-                nameTaken = false;
-            } else {
-                nameList.push(data.toString().trim());
-                client.write('your name has been updated!');
-                updateNameList = false;
-            }
-        } else {
-            if (data.toString().trim() == "/idRecieved") {
-                client.write('hi')
-            } else {
-                console.log(`${data.toString().trim()}`);
-                messageHandler = `${data.toString().trim()}`;
-                myEmitter.emit('message');
-            }
-        }
     });
-
     myEmitter.on('message', () => { client.write(messageHandler) });
+    myEmitter.on('kick', () => { client.write(messageHandler) });
+    myEmitter.on('kickReady', () => { client.write(messageHandler) });
 
     process.stdin.on('data', (data) => {
         if (data.toString().trim() == "/list") {
