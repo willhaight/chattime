@@ -8,6 +8,7 @@ let storedName = null;
 let count = 0;
 let kickHandle = false;
 let messageHandler;
+let whisperStatus = 0;
 let nameTaken = false;
 let myEmitter = new EventEmitter();
 let server = net.createServer(client => {
@@ -35,11 +36,31 @@ let server = net.createServer(client => {
                 console.log('readying kick')
             } else if (kickHandle == true) {
                 messageHandler = `${data.toString().trim()}`;
-                console.log('emission');
+                for (let i = 0; i < nameList.length; i++) {
+                    if (data.toString().trim() == nameList[i]) {
+                        nameList.splice(i, 1, 'unamed')
+                    }
+                }
                 myEmitter.emit('kick');
                 kickHandle = false;
             } else if (data.toString().trim() == "/giveList") {
                 client.write(`${nameList}`)
+            } else if (data.toString().trim() == "/whisper") {
+                client.write('/whisperWho');
+                whisperStatus++;
+            } else if (whisperStatus == 1) {
+                storedName = data.toString().trim()
+                whisperStatus++
+                myEmitter.emit('whisperReady')
+                console.log(`captured whisper to ${storedName}`)
+            } else if (whisperStatus == 2) {
+                messageHandler = data.toString().trim()
+                myEmitter.emit('whisperNameCheck');
+                whisperStatus++
+            } else if (whisperStatus == 3) {
+                messageHandler = `${messageHandler}: ` + 'from ' + `${data.toString().trim()}`
+                myEmitter.emit('whisper')
+                whisperStatus = false;
             }
 
 
@@ -79,6 +100,9 @@ let server = net.createServer(client => {
     myEmitter.on('message', () => { client.write(messageHandler) });
     myEmitter.on('kick', () => { client.write(messageHandler) });
     myEmitter.on('kickReady', () => { client.write(messageHandler) });
+    myEmitter.on('whisper', () => { client.write(messageHandler) });
+    myEmitter.on('whisperReady', () => { client.write('/readyForMessage') });
+    myEmitter.on('whisperNameCheck', () => { client.write(storedName) });
 
     process.stdin.on('data', (data) => {
         if (data.toString().trim() == "/list") {

@@ -7,6 +7,8 @@ let firstMessage = 0;
 let connectionId = null;
 let kickAdmin = false;
 let kickCheck = false;
+let incomingWhisper = false;
+let whisper = 0;
 let client = net.createConnection({ port: 3001 }, () => {
     console.log('Client Connected');
     client.on('data', (data) => {
@@ -41,7 +43,40 @@ let client = net.createConnection({ port: 3001 }, () => {
                     console.log(`${data.toString().trim()} was kicked from the server`)
                 }
                 kickCheck = false;
-            } else {
+            } else if (data.toString().trim() == '/whisperWho') {
+                if (whisper == 1) {
+                    console.log('who are you whispering to?')
+                    whisper++
+                }
+
+
+            } else if (data.toString().trim() == '/readyForMessage') {
+                incomingWhisper = true;
+                if (whisper == 5) {
+                    console.log('Write your Message')
+                    whisper = 2;
+                }
+
+            } else if (data.toString().trim() == name && incomingWhisper == true) {
+                console.log('DM incoming')
+                whisper = 10;
+            } else if (incomingWhisper == true && whisper == 5) {
+                console.log(`sending message. enter anything to continue`)
+                whisper++
+            } else if (whisper == 10) {
+                console.log(data.toString().trim())
+                incomingWhisper = false;
+                whisper = 0;
+            } else if (incomingWhisper == true && whisper != 10) {
+                if (whisper == 100) {
+                    whisper = 0;
+                    incomingWhisper = false;
+                } else {
+                    whisper = 100;
+                }
+
+
+            } else if (incomingWhisper == false) {
                 console.log(`${data}`);
             }
         }
@@ -68,6 +103,17 @@ let client = net.createConnection({ port: 3001 }, () => {
             client.write(data.toString().trim())
         } else if (data.toString().trim() == '/list') {
             client.write('/giveList')
+        } else if (data.toString().trim() == '/w') {
+            client.write('/whisper')
+            whisper++;
+        } else if (whisper == 2) {
+            client.write(data.toString().trim())
+            whisper = 5;
+        } else if (whisper == 6) {
+            client.write(name)
+            console.log('sending my name')
+            whisper = 0;
+            incomingWhisper = false;
         }
         else {
             client.write(`${name + ': ' + data.toString().trim()}`)
